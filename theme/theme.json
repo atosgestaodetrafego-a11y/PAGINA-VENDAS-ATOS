@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schemas.wp.org/wp/6.6/theme.json",
+  "version": 3,
+  "settings": {
+    "appearanceTools": true,
+    "useRootPaddingAwareAlignments": false,
+    "layout": { "contentSize": "1180px", "wideSize": "1380px" },
+    "color": {
+      "defaultPalette": false,
+      "defaultGradients": false,
+      "palette": [
+        { "slug": "preto", "name": "ATOS Preto", "color": "#151515" },
+        { "slug": "creme", "name": "ATOS Creme", "color": "#FBF6ED" },
+        { "slug": "ambar", "name": "ATOS Âmbar", "color": "#ED9C08" }
+      ]
+    },
+    "typography": {
+      "fluid": true,
+      "fontFamilies": [{ "slug": "atos", "name": "Gotham / Arial", "fontFamily": "Gotham, Arial, Helvetica, sans-serif" }],
+      "fontSizes": [
+        { "slug": "small", "name": "Pequeno", "size": "0.85rem" },
+        { "slug": "medium", "name": "Texto", "size": "1rem" },
+        { "slug": "large", "name": "Subtítulo", "size": "1.5rem" },
+        { "slug": "x-large", "name": "Título", "size": "3rem", "fluid": { "min": "2rem", "max": "3rem" } }
+      ]
+    },
+    "spacing": { "units": ["px", "rem", "%", "vw"], "blockGap": true }
+  },
+  "styles": {
+    "color": { "background": "var:preset|color|creme", "text": "var:preset|color|preto" },
+    "typography": { "fontFamily": "var:preset|font-family|atos", "fontSize": "1rem", "lineHeight": "1.7" },
+    "spacing": { "blockGap": "0px", "padding": { "top": "0px", "right": "0px", "bottom": "0px", "left": "0px" } },
+    "elements": {
+      "link": { "color": { "text": "inherit" } },
+      "heading": { "typography": { "fontWeight": "750", "lineHeight": "1.08", "letterSpacing": "-0.045em" } }
+    }
+  },
+  "templateParts": [
+    { "name": "header", "title": "Cabeçalho ATOS", "area": "header" },
+    { "name": "footer", "title": "Rodapé ATOS", "area": "footer" }
+  ]
+}

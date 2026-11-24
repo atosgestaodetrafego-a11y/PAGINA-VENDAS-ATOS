@@ -1,0 +1,31 @@
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const browser=await chromium.launch({headless:true});
+fs.mkdirSync('test-results',{recursive:true});
+for(const [label,width,height] of [['desktop',1440,1000],['mobile',390,844],['compact',320,740]]) {
+ const page=await browser.newPage({viewport:{width,height}});
+ const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8080',{waitUntil:'networkidle'});
+ assert.equal(await page.locator('h1').count(),1);
+ assert.equal(await page.locator('main section').count(),11);
+ assert.equal(await page.locator('details').count(),8);
+ const overflow=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+ assert.ok(overflow.scroll<=overflow.width,`${label}: overflow ${JSON.stringify(overflow)}`);
+ const ctas=await page.locator('[data-atos-cta]').all();
+ assert.ok(ctas.length>=5);
+ for(const cta of ctas) assert.ok((await cta.getAttribute('href')).startsWith('https://wa.me/5511957314749?text='));
+ const firstFaq=page.locator('details').first();
+ await firstFaq.locator('summary').click();
+ assert.ok(await firstFaq.getAttribute('open')!==null,'FAQ não abriu');
+ await firstFaq.locator('summary').focus();
+ await page.keyboard.press('Enter');
+ assert.equal(await firstFaq.getAttribute('open'),null,'FAQ não fechou com teclado');
+ assert.equal(await page.locator('img').evaluateAll(imgs=>imgs.filter(i=>!i.complete||i.naturalWidth===0).length),0,'Imagem quebrada');
+ await page.screenshot({path:`test-results/atos-${label}.png`,fullPage:true});
+ assert.deepEqual(errors,[]);
+ await page.close();
+}
+await browser.close();
+console.log('OK: computador, celular 390px e 320px, WhatsApp, FAQ, teclado e imagens.');

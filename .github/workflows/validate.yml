@@ -1,0 +1,76 @@
+name: Validar tema WordPress
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wordpress:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        wordpress: ['6.6', 'latest']
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: wordpress-test-only
+          MYSQL_DATABASE: wordpress
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mysqli
+          tools: wp-cli
+      - name: Gerar e verificar estrutura
+        run: |
+          node tools/build.mjs
+          node tools/validate.mjs
+          find theme -name '*.php' -print0 | xargs -0 -n1 php -l
+          node --check theme/assets/site.js
+          node --check theme/assets/admin.js
+      - name: Instalar WordPress de teste
+        run: |
+          mkdir -p /tmp/atos-wordpress-test
+          wp core download --version=${{ matrix.wordpress }} --path=/tmp/atos-wordpress-test --locale=pt_BR
+          wp config create --path=/tmp/atos-wordpress-test --dbname=wordpress --dbuser=root --dbpass=wordpress-test-only --dbhost=127.0.0.1:3306
+          wp core install --path=/tmp/atos-wordpress-test --url=http://127.0.0.1:8080 --title='ATOS Clientes Locais' --admin_user=atos-test --admin_password='Local-test-only-1234!' --admin_email=teste@example.org --skip-email
+          cp -R theme /tmp/atos-wordpress-test/wp-content/themes/atos-clientes-locais
+          wp theme activate atos-clientes-locais --path=/tmp/atos-wordpress-test
+          wp eval-file tools/wp-smoke.php --path=/tmp/atos-wordpress-test
+          php -S 127.0.0.1:8080 -t /tmp/atos-wordpress-test > /tmp/atos-php-server.log 2>&1 &
+      - name: Testar navegação e responsividade
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+          node tools/browser-smoke.mjs
+      - name: Gerar ZIP instalável
+        if: matrix.wordpress == 'latest'
+        run: |
+          mkdir -p /tmp/atos-package/atos-clientes-locais dist
+          cp -R theme/. /tmp/atos-package/atos-clientes-locais/
+          cd /tmp/atos-package
+          zip -qr "$GITHUB_WORKSPACE/dist/atos-clientes-locais.zip" atos-clientes-locais
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verificacao-wordpress-${{ matrix.wordpress }}
+          path: test-results/
+      - uses: actions/upload-artifact@v4
+        if: success() && matrix.wordpress == 'latest'
+        with:
+          name: tema-wordpress-instalavel
+          path: dist/atos-clientes-locais.zip
