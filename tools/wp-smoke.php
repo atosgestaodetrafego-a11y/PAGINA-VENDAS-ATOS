@@ -4,7 +4,7 @@ $fail = function( $message ) { WP_CLI::error( $message ); };
 if ( ! wp_is_block_theme() ) { $fail( 'O tema não foi reconhecido como tema de blocos.' ); }
 $template = get_block_template( get_stylesheet() . '//front-page', 'wp_template' );
 if ( ! $template ) { $fail( 'Modelo de página inicial ausente.' ); }
-$html = do_blocks( $template->content );
+$html = do_shortcode( do_blocks( $template->content ) );
 foreach ( array( 'Sua empresa precisa ser encontrada', 'R$ 2.500', '5511957314749', 'não são atribuídos a uma campanha específica' ) as $text ) {
     if ( false === strpos( $html, $text ) ) { $fail( 'Conteúdo ausente: ' . $text ); }
 }

@@ -27,5 +27,19 @@ for(const [label,width,height] of [['desktop',1440,1000],['mobile',390,844],['co
  assert.deepEqual(errors,[]);
  await page.close();
 }
+const editor=await browser.newPage();
+await editor.goto('http://127.0.0.1:8080/wp-login.php');
+await editor.locator('#user_login').fill('atos-test');
+await editor.locator('#user_pass').fill('Local-test-only-1234!');
+await editor.locator('#wp-submit').click();
+await editor.waitForURL('**/wp-admin/**');
+await editor.goto('http://127.0.0.1:8080/wp-admin/post-new.php');
+await editor.waitForFunction(()=>window.wp?.blocks?.getBlockType('core/details'),{timeout:30000});
+const invalid=await editor.evaluate(source=>{
+ const collect=blocks=>blocks.flatMap(b=>[...(b.isValid===false?[{name:b.name,html:b.originalContent?.slice(0,200)}]:[]),...collect(b.innerBlocks||[])]);
+ return collect(window.wp.blocks.parse(source));
+},fs.readFileSync('theme/templates/front-page.html','utf8'));
+assert.deepEqual(invalid,[],'Blocos inválidos para edição visual: '+JSON.stringify(invalid));
+await editor.close();
 await browser.close();
-console.log('OK: computador, celular 390px e 320px, WhatsApp, FAQ, teclado e imagens.');
+console.log('OK: computador, celular 390px e 320px, WhatsApp, FAQ, teclado, imagens e edição visual.');
